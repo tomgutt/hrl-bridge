@@ -1,0 +1,21 @@
+---
+applications:
+  - name: hrl-bridge
+    memory: 256M
+    instances: 1
+    buildpacks:
+      - python_buildpack
+    command: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers
+    health-check-type: http
+    health-check-http-endpoint: /livez
+    env:
+      TMS_HOST: tramway.proxy.rlwy.net
+      TMS_PORT: "17159"
+      TMS_READ_TIMEOUT_S: "30"
+      TMS_RETRY_ATTEMPTS: "3"
+      TMS_BACKOFF_INITIAL_MS: "250"
+      LOG_LEVEL: info
+    # Secrets are NOT in this file — set via:
+    #   cf set-env hrl-bridge TMS_TOKEN <value>
+    #   cf set-env hrl-bridge BRIDGE_TOKEN <value>
+    # Then: cf restage hrl-bridge
