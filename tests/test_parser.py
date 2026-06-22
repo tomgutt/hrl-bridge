@@ -78,9 +78,15 @@ def test_error_line_already_booked():
     assert code == "ALREADY_BOOKED"
 
 
-def test_parse_record_rejects_missing_colon():
-    with pytest.raises(ParseError):
-        parse_record_line("LOAD_ID:LD0000045821|BAD_PAIR")
+def test_parse_record_tolerates_bareword_prefix():
+    # `ECHO` and `ERR` are documented response markers without a colon.
+    # The parser must skip them, not reject the line.
+    rec = parse_record_line("ECHO|AUTH:OK|FIELDS_PARSED:3|MSG:HELLO")
+    assert rec["AUTH"] == "OK"
+    assert rec["MSG"] == "HELLO"
+    # Trailing bareword on an otherwise valid record is also tolerated.
+    rec2 = parse_record_line("LOAD_ID:LD0000045821|BAD_PAIR")
+    assert rec2["LOAD_ID"] == "LD0000045821"
 
 
 def test_parse_record_rejects_empty_key():

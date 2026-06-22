@@ -42,7 +42,9 @@ def parse_record_line(line: str) -> dict[str, Any]:
         if not pair:
             continue
         if ":" not in pair:
-            raise ParseError(f"missing ':' in pair: {pair!r}")
+            # Skip leading prefix tokens like `ECHO`, `ERR` — they have no colon
+            # and are documented in the spec as record markers, not KEY:VALUE pairs.
+            continue
         key, _, raw = pair.partition(":")
         key = key.strip()
         if not key:
@@ -81,7 +83,12 @@ def parse_error_line(line: str) -> tuple[str, str]:
     """Parse `ERR|CODE:<code>|MSG:<msg>` → (code, msg). Raises if not an error line."""
     if not line.startswith("ERR"):
         raise ParseError("not an error line")
-    rec = parse_record_line(line)
+    rec: dict[str, Any] = {}
+    for pair in line.split("|"):
+        if not pair or pair == "ERR" or ":" not in pair:
+            continue
+        k, _, v = pair.partition(":")
+        rec[k.strip()] = v.strip()
     code = rec.get("CODE", "")
     msg = rec.get("MSG", "")
     if not code:
